@@ -10,7 +10,7 @@ const Message = (props) => {
                 {props.message.role === "assistant" &&
                     <Typewriter
                         onInit={(typewriter) => {
-                            typewriter.changeDelay(25).typeString(props.message.content).start()
+                            typewriter.changeDelay(25).pauseFor(750).start().typeString(props.message.content)
                         }}
                     />
                 }
