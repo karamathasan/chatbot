@@ -16,7 +16,7 @@ export async function POST(req) {
 
     const stream = new ReadableStream({
         async start(controller) {
-            const encoder = new TextDecoder()
+            const encoder = new TextEncoder()
             try {
                 for await (const chunk of completion) {
                     const content = chunk.choices[0]?.delta?.content
@@ -33,8 +33,5 @@ export async function POST(req) {
 
         }
     })
-    // const response = completion.choices[0].message.content
-    // return NextResponse.json({message:response})
-    return NextResponse.json(stream)
-    // return NextResponse.json({message:"test"})
+    return new NextResponse(stream)
 }

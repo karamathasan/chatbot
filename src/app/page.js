@@ -1,4 +1,5 @@
 'use client'
+
 import { useState } from "react";
 import Message from "./components/message";
 import { motion } from "framer-motion";
@@ -8,16 +9,15 @@ export default function Home() {
   const [messages, setMessages] = useState(
     [{ role: "assistant", content: "Hi, I am your AI assistant. How can I help you today?" }]
   )
-  const [message, setMessage] = useState('')
 
+  const [message, setMessage] = useState('')
   const sendMessage = async () => {
     if (!message.trim()) return;  // Don't send empty messages
 
     setMessage('')
     setMessages((messages) => [
       ...messages,
-      { role: 'user', content: message },
-      { role: 'assistant', content: '' },
+      { role: 'user', content: message }
     ])
 
     try {
@@ -36,23 +36,17 @@ export default function Home() {
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
 
-      let result = ''
+      let finalResponse = "";
+      while (true) { // reader loads text in chunks (per word); this loop appends these chunks into one string, then we use setMessages
+        const { done, value } = await reader.read()
+        if (done) break
+        finalResponse += decoder.decode(value, { stream: true })
+      }
 
-      return reader.read().then(function processText({done, value}) {
-        if (done) {
-          return result
-        }
-        const text = decoder.decode(value, { stream: true })
-        setMessages((messages) => {
-          let lastMessage = messages[messages.length - 1]
-          let otherMessages = messages.slice(0, messages.length - 1)
-          return [
-            ...otherMessages,
-            { ...lastMessage, content: lastMessage.content + text },
-          ]
-        })
-        return reader.read().then(processText)
-      })
+      setMessages((messages) => [
+        ...messages,
+        { role: 'assistant', content: finalResponse}
+      ])
 
     } catch (error) {
       console.error('Error:', error)
@@ -62,6 +56,7 @@ export default function Home() {
       ])
     }
   }
+
   return (
     <motion.main
       initial={{ y: 50, opacity: 0 }}
