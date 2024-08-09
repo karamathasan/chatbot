@@ -15,6 +15,7 @@ import { motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
 import { doc, query, collection, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import Background from "./components/background";
 
 export default function Home() {
   const router = useRouter()
@@ -126,18 +127,18 @@ export default function Home() {
   }
 
   return (
-      <motion.main
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ ease: "easeInOut", duration: 1 }}
-        className="w-full h-[calc(100vh-4rem)] flex flex-col items-center justify-start"
-      >
-        <Toaster position="top-center" />
+    <main className="relative">
+      <Toaster position="top-center" />
+      <Background />
+      <div className="w-screen h-screen min-h-screen flex flex-col items-center justify-center absolute float-left clear-left z-[2] bg-none">
         <div className="w-full flex flex-row justify-end items-center p-[2rem]">
-          <button className="border-blue-600 border-[3px] rounded-[20px] p-[1rem] text-[#333] hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:text-white transition ease-in-out duration-250" onClick={logout}>Log out</button>
+          <button className="border-blue-600 border-[3px] rounded-[20px] p-[1rem] text-[#333] bg-[#fff] hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:text-white transition ease-in-out duration-250" onClick={logout}>Log out</button>
         </div>
-        
-        <div className="flex flex-col w-full h-[80vh] max-w-[80vw] shadow-md border p-4 rounded-[25px] space-y-3 bg-[#f9f9fb]">
+        <motion.div
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ ease: "easeInOut", duration: 1 }}
+          className="flex flex-col w-full h-[80vh] max-w-[80vw] shadow-md border p-4 rounded-[25px] space-y-3">
           <div className="flex flex-row justify-start items-center space-x-[0.5rem]">
             <div className="relative w-[24px] h-[24px]">
               <Image priority src={"sparkles.svg"} width={0} height={0} sizes="100vw" style={{ width: "100%", height: "auto" }} alt={""} quality={100} />
@@ -163,9 +164,8 @@ export default function Home() {
             <input type="text" placeholder="Message" className="w-full border rounded-[25px] py-[0.5rem] px-[1rem]" value={message} onChange={(e) => setMessage(e.target.value)} />
             <button type="submit" className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-[10px] p-2 " onClick={sendMessage}>Send</button>
           </form>
-
-          {/* <button type="submit" className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-[10px] p-2 " onClick={getInitialMessage}>test</button> */}
-        </div>
-      </motion.main>
+        </motion.div>
+      </div>
+    </main>
   );
 }
