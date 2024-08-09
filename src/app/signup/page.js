@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { createUserWithEmailAndPassword, onAuthStateChanged, getAuth, FirebaseAuthException } from "firebase/auth";
 import { auth } from "../firebase";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
 import toast, { Toaster } from "react-hot-toast";
@@ -16,11 +16,12 @@ import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { motion } from "framer-motion";
 import { FirebaseError } from "firebase/app";
 import { errorPrefix } from "@firebase/util";
+
 export default function Login() {
     const [email, setEmail] = useState("")
     const [name, setName] = useState("")
     const [password, setPassword] = useState("")
-    const [user, setUser] = useState('')
+    const [user, setUser] = useState({})
 
     const [showPassword, setShowPassword] = useState(false)
 
@@ -38,18 +39,29 @@ export default function Login() {
 
     onAuthStateChanged(auth, (currentUser) => {
         if (currentUser) {
+            setUser(currentUser)
+            createUserDoc()
             router.push('/')
         } else {
             setUser(currentUser)
         }
     })
 
+    const createUserDoc = async () => {
+        const docRef = doc(collection(db, 'users'), user.uid)
+        try {
+            await setDoc(docRef, { messages: [], name:name });
+            console.log("User added to DB successfully");
+          } catch (error) {
+            console.error("Failed to add user to DB:", error);
+          }
+    }
+
     const register = async () => {
-        const userCredential = createUserWithEmailAndPassword(auth, email, password).then(() => {
-            const user = userCredential.user;
-            const docRef = doc(db, 'users', email)
+        const userCredential = createUserWithEmailAndPassword(auth, email, password).then(async () => {
+            setUser(userCredential.user)
             createAccountSuccess()
-            router.push('/login')
+            // router.push('/login')
         }).catch(err => {
             switch (err.code) {
                 case "auth/email-already-in-use":

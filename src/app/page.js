@@ -11,19 +11,38 @@ import { useRouter } from "next/navigation";
 import { auth } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 
-
 import { motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
+import { doc, query, collection, getDoc, setDoc } from "firebase/firestore";
+import { db } from "./firebase";
 
 export default function Home() {
   const router = useRouter()
   const logoutSuccess = () => toast.success("Successfully logged out!")
+  const [user,setUser] = useState({})
 
   onAuthStateChanged(auth, (currentUser) => {
     if (!currentUser) {
       router.push('/login')
     }
+    else setUser(currentUser)
   })
+
+  // const getInitialMessage = async () =>{
+  //   const docRef = doc(collection(db, "users"), user.uid)
+  //   const docSnap = await getDoc(docRef)
+  //   const name = docSnap.data().name
+  //   if (docSnap.data().message.length !== 0){
+  //     content = "Hi "+ name +", I am your AI assistant. How can I help you today?"
+  //   } else {
+  //     content = "Welcome back, " + name + ", How can I help you today?"
+  //   }
+  //   return [{ role: "assistant", content: content }]
+  // }
+  const updateDBHistory = async ()=>{
+    const docRef = doc(collection(db, "users"), user.uid)
+    setDoc(docRef,{messages:messages})
+  }
 
   const [messages, setMessages] = useState(
     [{ role: "assistant", content: "Hi, I am your AI assistant. How can I help you today?" }]
@@ -73,12 +92,14 @@ export default function Home() {
         { role: 'assistant', content: finalResponse }
       ])
 
+
     } catch (error) {
       console.error('Error:', error)
       setMessages((messages) => [
         ...messages,
         { role: 'assistant', content: "I'm sorry, but I encountered an error. Please try again later." },
       ])
+
     }
   }
 
@@ -120,6 +141,8 @@ export default function Home() {
             <input type="text" placeholder="Message" className="w-full border rounded-[25px] py-[0.5rem] px-[1rem]" value={message} onChange={(e) => setMessage(e.target.value)} />
             <button type="submit" className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-[10px] p-2 " onClick={sendMessage}>Send</button>
           </form>
+
+          {/* <button type="submit" className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-[10px] p-2 " onClick={getInitialMessage}>test</button> */}
         </div>
       </motion.main>
   );
