@@ -92,7 +92,7 @@ export default function Home() {
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ ease: "easeInOut", duration: 1 }}
-        className="flex flex-col w-full h-[80vh] max-w-[80vw] shadow-md border p-4 rounded-[25px] space-y-3 bg-[#f9f9fb]">
+        className="flex flex-col w-full h-[80vh] max-w-[80vw] shadow-md border p-4 rounded-[25px] space-y-3">
         <div className="flex flex-row justify-start items-center space-x-[0.5rem]">
           <div className="relative w-[24px] h-[24px]">
             <Image priority src={"sparkles.svg"} width={0} height={0} sizes="100vw" style={{ width: "100%", height: "auto" }} alt={""} quality={100} />
