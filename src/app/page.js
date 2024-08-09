@@ -3,7 +3,7 @@
 /* COMPONENTS */
 import Message from "./components/message";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -20,14 +20,37 @@ export default function Home() {
   const router = useRouter()
   const logoutSuccess = () => toast.success("Successfully logged out!")
   const [user,setUser] = useState({})
+  const [name,setName] = useState('')
 
   onAuthStateChanged(auth, (currentUser) => {
     if (!currentUser) {
       router.push('/login')
+      const test = async ()=>{
+        const docRef = doc(collection(db, "users"), user.uid)
+        const docSnap = await getDoc(docRef)
+        const name = docSnap.data().name
+        setName(name)
+      }
+      test()
     }
     else setUser(currentUser)
   })
 
+  const [messages, setMessages] = useState(
+    [{ role: "assistant", content: "Hi," + name +" I am your AI assistant. How can I help you today?" }]
+  )
+
+  // useEffect(()=>{
+  //   const test = async ()=>{
+  //     const docRef = doc(collection(db, "users"), user.uid)
+  //     const docSnap = await getDoc(docRef)
+  //     const name = docSnap.data().name
+  //     console.log(name)
+  //     setMessages([{ role: "assistant", content: "Hi " + name +", I am your AI assistant. How can I help you today?" }])
+  //   }
+  //   // test()
+  // })
+  
   // const getInitialMessage = async () =>{
   //   const docRef = doc(collection(db, "users"), user.uid)
   //   const docSnap = await getDoc(docRef)
@@ -39,14 +62,13 @@ export default function Home() {
   //   }
   //   return [{ role: "assistant", content: content }]
   // }
+
   const updateDBHistory = async ()=>{
     const docRef = doc(collection(db, "users"), user.uid)
     setDoc(docRef,{messages:messages})
   }
 
-  const [messages, setMessages] = useState(
-    [{ role: "assistant", content: "Hi, I am your AI assistant. How can I help you today?" }]
-  )
+  
 
   const logout = async () => {
     logoutSuccess()
