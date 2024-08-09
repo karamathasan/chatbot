@@ -16,6 +16,7 @@ import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { motion } from "framer-motion";
 import { FirebaseError } from "firebase/app";
 import { errorPrefix } from "@firebase/util";
+
 export default function Login() {
     const [email, setEmail] = useState("")
     const [name, setName] = useState("")
@@ -66,14 +67,13 @@ export default function Login() {
     }
 
     return (
-        <motion.main
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ ease: "easeInOut", delay: 0.5, duration: 0.75 }}
-            className="w-screen h-screen flex items-center justify-center"
-        >
+        <main className="w-screen h-screen flex items-center justify-center">
             <Toaster position="top-center" />
-            <div className="flex flex-col justify-center items-center w-full max-w-md shadow-md border p-4 rounded-[25px] space-y-[5rem] bg-[#f8f8ff]">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ ease: "easeInOut", delay: 0.5, duration: 0.75 }}
+                className="flex flex-col justify-center items-center w-full max-w-md shadow-md border p-4 rounded-[25px] space-y-[5rem] bg-[#f8f8ff]">
                 <h1 className="text-[45px] text[#333] text-left w-full">Create an Account</h1>
 
                 <div className="w-full flex flex-col justify-center items-center space-y-[1rem] select-none">
@@ -97,7 +97,7 @@ export default function Login() {
                     </form>
                     <Link href={"/login"}>Or Login into Existing Account</Link>
                 </div>
-            </div>
-        </motion.main>
+            </motion.div>
+        </main>
     );
 }
