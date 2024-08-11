@@ -80,7 +80,6 @@ export default function Login() {
 
     return (
         <main className="relative">
-            <Toaster position="top-center" />
             <Background />
             <div className="w-screen h-screen min-h-screen flex items-center justify-center absolute float-left clear-left z-[2] bg-none">
                 <motion.div

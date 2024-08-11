@@ -129,7 +129,6 @@ export default function Home() {
 
   return (
     <main className="relative">
-      <Toaster position="top-center" />
       <Background />
       <div className="w-screen h-screen min-h-screen flex flex-col items-center justify-center absolute float-left clear-left z-[2] bg-none">
         <div className="w-full flex flex-row justify-end items-center p-[2rem]">
