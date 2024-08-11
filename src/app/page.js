@@ -3,7 +3,7 @@
 /* COMPONENTS */
 import Message from "./components/message";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -22,54 +22,55 @@ export default function Home() {
   const logoutSuccess = () => toast.success("Successfully logged out!")
   const [user,setUser] = useState({})
   const [name,setName] = useState('')
+  const [loading, setLoading] = useState(true)
 
-  onAuthStateChanged(auth, (currentUser) => {
+  onAuthStateChanged(auth, async (currentUser) => {
     if (!currentUser) {
       router.push('/login')
-      const test = async ()=>{
-        const docRef = doc(collection(db, "users"), user.uid)
-        const docSnap = await getDoc(docRef)
-        const name = docSnap.data().name
-        setName(name)
-      }
-      test()
+    } else {
+      setUser(currentUser)
+      await getName()
+      
+      const oldMessages = await loadPreviousMessages()
+      setMessages(oldMessages)
+      
+      setLoading(false)
     }
-    else setUser(currentUser)
   })
 
-  const [messages, setMessages] = useState(
-    [{ role: "assistant", content: "Hi," + name +" I am your AI assistant. How can I help you today?" }]
-  )
-
-  // useEffect(()=>{
-  //   const test = async ()=>{
-  //     const docRef = doc(collection(db, "users"), user.uid)
-  //     const docSnap = await getDoc(docRef)
-  //     const name = docSnap.data().name
-  //     console.log(name)
-  //     setMessages([{ role: "assistant", content: "Hi " + name +", I am your AI assistant. How can I help you today?" }])
-  //   }
-  //   // test()
-  // })
-  
-  // const getInitialMessage = async () =>{
-  //   const docRef = doc(collection(db, "users"), user.uid)
-  //   const docSnap = await getDoc(docRef)
-  //   const name = docSnap.data().name
-  //   if (docSnap.data().message.length !== 0){
-  //     content = "Hi "+ name +", I am your AI assistant. How can I help you today?"
-  //   } else {
-  //     content = "Welcome back, " + name + ", How can I help you today?"
-  //   }
-  //   return [{ role: "assistant", content: content }]
-  // }
-
-  const updateDBHistory = async ()=>{
+  const loadPreviousMessages = async()=>{
     const docRef = doc(collection(db, "users"), user.uid)
-    setDoc(docRef,{messages:messages})
+    const docSnap = await getDoc(docRef)
+    const oldMessages = await docSnap.data().messages
+    return oldMessages
   }
 
+  const getName = async ()=>{
+    const docRef = doc(collection(db, "users"), user.uid)
+    const docSnap = await getDoc(docRef)
+    const name = docSnap.data().name
+    setName(name)
+  }
+
+  const updateGreeting = (message, index)=>{
+    //TODO: very hardcoded solution, may need future changes
+    if (index === 0 && !message.content.includes(name)){
+      const newMessage = messages[0]
+      newMessage.content = `Hi ${name}, I am your AI assistant. How can I help you today?`
+      return newMessage
+    }
+    else return message
+  }
+
+  const [messages, setMessages] = useState(
+    [{ role: "assistant", content: `Hi, I am your AI assistant. How can I help you today?` }],
+  )
   
+  const updateDBHistory = async ()=>{
+    const docRef = doc(collection(db, "users"), user.uid)
+    const docSnap = await getDoc(docRef)
+    await setDoc(docRef,{...docSnap.data(), messages:messages})
+  }
 
   const logout = async () => {
     logoutSuccess()
@@ -102,7 +103,7 @@ export default function Home() {
 
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
-
+            
       let finalResponse = "";
       while (true) { // reader loads text in chunks (per word); this loop appends these chunks into one string, then we use setMessages
         const { done, value } = await reader.read()
@@ -114,7 +115,7 @@ export default function Home() {
         ...messages,
         { role: 'assistant', content: finalResponse }
       ])
-
+      
 
     } catch (error) {
       console.error('Error:', error)
@@ -122,8 +123,8 @@ export default function Home() {
         ...messages,
         { role: 'assistant', content: "I'm sorry, but I encountered an error. Please try again later." },
       ])
-
     }
+    updateDBHistory()
   }
 
   return (
@@ -146,7 +147,10 @@ export default function Home() {
             <h1>AI Chatbot</h1>
           </div>
           <div className="flex flex-col flex-grow space-y-2 overflow-auto max-h-full">
-            {messages.map((message, index) => {
+            {loading ? (<>. . . . .</>) : (
+              messages.map((message, index) => { 
+              message = updateGreeting(message, index)
+              // console.log(message)
               return (
                 <motion.div
                   key={index}
@@ -156,8 +160,9 @@ export default function Home() {
                 >
                   <Message key={index} message={message} />
                 </motion.div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           <form className="flex flex-row space-x-2" onSubmit={(e) => e.preventDefault()}>
