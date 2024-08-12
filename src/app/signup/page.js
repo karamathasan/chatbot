@@ -37,24 +37,11 @@ export default function Signup() {
         setShowPassword(!showPassword)
     }
 
-    // onAuthStateChanged(auth, (currentUser) => {
-    //     if (currentUser) {
-    //         setUser(currentUser)
-    //         // createUserDoc() // for some reason, this is the only place it works
-    //     } else {
-    //         // setUser(currentUser)
-    //     }
-    // })
-
-    const createUserDoc = async (user) => {
-        const docRef = doc(collection(db, 'users'), user.uid)
-        try {
-            await setDoc(docRef, { messages: []});
-            console.log("User added to DB successfully");
-        } catch (error) {
-            console.error("Failed to add user to DB:", error);
-        }   
-    }
+    onAuthStateChanged(auth, (currentUser) => {
+        if (currentUser) {
+            router.push('/')
+        }
+    })
 
     const register = async () => {
         createUserWithEmailAndPassword(auth, email, password).then(async (userCredential) => {
