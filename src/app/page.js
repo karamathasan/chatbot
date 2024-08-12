@@ -3,17 +3,17 @@
 /* COMPONENTS */
 import Message from "./components/message";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { auth } from "./firebase";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { deleteUser, onAuthStateChanged, signOut } from "firebase/auth";
 
 import { motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
-import { doc, query, collection, getDoc, setDoc } from "firebase/firestore";
+import { doc, collection, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import Background from "./components/background";
 
@@ -21,51 +21,51 @@ export default function Home() {
   const router = useRouter()
   const logoutSuccess = () => toast.success("Successfully logged out!")
   const [user,setUser] = useState({})
-  const [name,setName] = useState('')
   const [loading, setLoading] = useState(true)
+  const [messages, setMessages] = useState(
+    [{ role: "assistant", content: "" }],
+  )
 
-  onAuthStateChanged(auth, async (currentUser) => {
+  useEffect(()=>{
+    updateDBHistory()
+  },[messages])
+
+  onAuthStateChanged(auth, (currentUser) => {
     if (!currentUser) {
       router.push('/login')
     } else {
       setUser(currentUser)
-      await getName()
-      
-      const oldMessages = await loadPreviousMessages()
-      setMessages(oldMessages)
-      
-      setLoading(false)
+      if (loading === true){
+        init()      
+      }
     }
   })
 
+  const init = async ()=>{
+      const oldMessages = await loadPreviousMessages()
+      const name = user.displayName
+      if (oldMessages.length === 0){
+        const content = `Hi ${name}, I am your AI assistant. How can I help you today?`
+        setMessages([{ role: "assistant", content: content}])
+      }
+      else {
+        const welcome = `Welcome back, ${name}. How can I help you today?`
+        setMessages([...oldMessages,{role:"assistant",content: welcome}])
+      }
+      setLoading(false)
+  }
+
   const loadPreviousMessages = async()=>{
-    const docRef = doc(collection(db, "users"), user.uid)
-    const docSnap = await getDoc(docRef)
-    const oldMessages = await docSnap.data().messages
-    return oldMessages
+    try{
+      const docRef = doc(collection(db, "users"), auth.currentUser.uid)
+      const docSnap = await getDoc(docRef)
+      const oldMessages = await docSnap.data().messages
+      return oldMessages
+    } catch (error) {
+      console.error(`Failed to get user doc, uid: ${auth.currentUser.uid}`, error);
+    }   
   }
 
-  const getName = async ()=>{
-    const docRef = doc(collection(db, "users"), user.uid)
-    const docSnap = await getDoc(docRef)
-    const name = docSnap.data().name
-    setName(name)
-  }
-
-  const updateGreeting = (message, index)=>{
-    //TODO: very hardcoded solution, may need future changes
-    if (index === 0 && !message.content.includes(name)){
-      const newMessage = messages[0]
-      newMessage.content = `Hi ${name}, I am your AI assistant. How can I help you today?`
-      return newMessage
-    }
-    else return message
-  }
-
-  const [messages, setMessages] = useState(
-    [{ role: "assistant", content: `Hi, I am your AI assistant. How can I help you today?` }],
-  )
-  
   const updateDBHistory = async ()=>{
     const docRef = doc(collection(db, "users"), user.uid)
     const docSnap = await getDoc(docRef)
@@ -76,6 +76,12 @@ export default function Home() {
     logoutSuccess()
     signOut(auth)
     router.push('/login')
+  }
+
+  const deleteAccount = async ()=>{
+    const docRef = doc(collection(db, "users"), user.uid)
+    await deleteDoc(docRef)
+    deleteUser(user)
   }
 
   const [message, setMessage] = useState('')
@@ -124,7 +130,6 @@ export default function Home() {
         { role: 'assistant', content: "I'm sorry, but I encountered an error. Please try again later." },
       ])
     }
-    updateDBHistory()
   }
 
   return (
@@ -133,6 +138,9 @@ export default function Home() {
       <div className="w-screen h-screen min-h-screen flex flex-col items-center justify-center absolute float-left clear-left z-[2] bg-none">
         <div className="w-full flex flex-row justify-end items-center p-[2rem]">
           <button className="border-blue-600 border-[3px] rounded-[20px] p-[1rem] text-[#333] bg-[#fff] hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:text-white transition ease-in-out duration-250" onClick={logout}>Log out</button>
+        </div>
+        <div className="w-full flex flex-row justify-end items-center p-[2rem]">
+          <button className="border-blue-600 border-[3px] rounded-[20px] p-[1rem] text-[#333] bg-[#fff] hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:text-white transition ease-in-out duration-250" onClick={deleteAccount}>Delete</button>
         </div>
         <motion.div
           initial={{ y: 50, opacity: 0 }}
@@ -148,8 +156,6 @@ export default function Home() {
           <div className="flex flex-col flex-grow space-y-2 overflow-auto max-h-full">
             {loading ? (<>. . . . .</>) : (
               messages.map((message, index) => { 
-              message = updateGreeting(message, index)
-              // console.log(message)
               return (
                 <motion.div
                   key={index}

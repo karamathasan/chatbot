@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { createUserWithEmailAndPassword, onAuthStateChanged, getAuth, FirebaseAuthException } from "firebase/auth";
+import { createUserWithEmailAndPassword, onAuthStateChanged, getAuth, FirebaseAuthException, updateProfile } from "firebase/auth";
 import { auth } from "../firebase";
 import { collection, doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
@@ -18,12 +18,11 @@ import { FirebaseError } from "firebase/app";
 import { errorPrefix } from "@firebase/util";
 import Background from "../components/background";
 
-export default function Login() {
+export default function Signup() {
     const [email, setEmail] = useState("")
     const [name, setName] = useState("")
     const [password, setPassword] = useState("")
-    const [user, setUser] = useState({})
-
+    // const [user, setUser] = useState({})
     const [showPassword, setShowPassword] = useState(false)
 
     const router = useRouter()
@@ -38,31 +37,45 @@ export default function Login() {
         setShowPassword(!showPassword)
     }
 
-    onAuthStateChanged(auth, (currentUser) => {
-        if (currentUser) {
-            setUser(currentUser)
-            createUserDoc()
-            router.push('/')
-        } else {
-            setUser(currentUser)
-        }
-    })
+    // onAuthStateChanged(auth, (currentUser) => {
+    //     if (currentUser) {
+    //         setUser(currentUser)
+    //         // createUserDoc() // for some reason, this is the only place it works
+    //     } else {
+    //         // setUser(currentUser)
+    //     }
+    // })
 
-    const createUserDoc = async () => {
+    const createUserDoc = async (user) => {
         const docRef = doc(collection(db, 'users'), user.uid)
         try {
-            await setDoc(docRef, { messages: [], name:name });
+            await setDoc(docRef, { messages: []});
             console.log("User added to DB successfully");
-          } catch (error) {
+        } catch (error) {
             console.error("Failed to add user to DB:", error);
-          }
+        }   
     }
 
     const register = async () => {
-        const userCredential = createUserWithEmailAndPassword(auth, email, password).then(async () => {
-            setUser(userCredential.user)
+        createUserWithEmailAndPassword(auth, email, password).then(async (userCredential) => {
+            const user = userCredential.user
+            console.log(`usercred: ${user}`)
+            await updateProfile(user, {
+                displayName:name 
+            })
+            console.log(user)
+            
+            const docRef = doc(collection(db, 'users'), user.uid)
+            try {
+                await setDoc(docRef, { messages: []});
+                console.log("User added to DB successfully");
+            } catch (error) {
+                console.error("Failed to add user to DB:", error);
+            } 
+            
+        }).then(()=>{
             createAccountSuccess()
-            // router.push('/login')
+            router.push("/")
         }).catch(err => {
             switch (err.code) {
                 case "auth/email-already-in-use":
@@ -90,7 +103,8 @@ export default function Login() {
                     <h1 className="text-[45px] text[#333] text-left w-full">Create an Account</h1>
 
                     <div className="w-full flex flex-col justify-center items-center space-y-[1rem] select-none">
-                        <form className="flex flex-col space-y-[1rem] w-full justify-center" onSubmit={(e) => e.preventDefault()}>
+                        <div className="flex flex-col space-y-[1rem] w-full justify-center" >
+                            {/* onSubmit={(e) => e.preventDefault()} */}
                             <input type="text" placeholder="Name" className="w-full border rounded-[25px] py-[0.5rem] px-[1rem]" value={name} onChange={(e) => setName(e.target.value)} />
                             <input type="text" placeholder="Email" className="w-full border rounded-[25px] py-[0.5rem] px-[1rem]" value={email} onChange={(e) => setEmail(e.target.value)} />
                             <div className="flex">
@@ -101,13 +115,13 @@ export default function Login() {
                             </div>
                             <button
                                 disabled={password.length === 0 || email.length === 0 || name.length === 0}
-                                type="submit"
+                                type="button"
                                 className={((password.length === 0 || email.length === 0 || name.length === 0) ? "cursor-not-allowed opacity-45" : "cursor-pointer opacity-100") + " bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-[10px] p-2"}
                                 onClick={register}
                             >
                                 Sign Up
                             </button>
-                        </form>
+                        </div>
                         <Link href={"/login"}>Or Login into Existing Account</Link>
                     </div>
                 </motion.div>

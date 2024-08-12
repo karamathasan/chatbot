@@ -18,7 +18,6 @@ export default function Login() {
   /* useStates for login info */
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [user, setUser] = useState('')
 
   const router = useRouter()
 
@@ -32,21 +31,20 @@ export default function Login() {
     setShowPassword(!showPassword)
   }
 
-  onAuthStateChanged(auth, (currentUser) => {
-    if (currentUser) {
-      router.push('/')
-    } else {
-      setUser(currentUser)
-    }
-  })
+  // onAuthStateChanged(auth, (currentUser) => {
+  //   if (currentUser) {
+  //     router.push('/')
+  //   }
+  // })
 
 
   const login = async () => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // const user = userCredential.user;
+      signInWithEmailAndPassword(auth, email, password).then((userCredential)=>{
+        // const user = userCredential.user;
+        router.push("/")
+      })
       notifyLoginSuccess()
-      router.push("/")
     } catch (error) {
       notifyLoginError()
     }
