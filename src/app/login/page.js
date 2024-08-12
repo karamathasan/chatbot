@@ -31,11 +31,11 @@ export default function Login() {
     setShowPassword(!showPassword)
   }
 
-  // onAuthStateChanged(auth, (currentUser) => {
-  //   if (currentUser) {
-  //     router.push('/')
-  //   }
-  // })
+  onAuthStateChanged(auth, (currentUser) => {
+    if (currentUser) {
+      router.push('/')
+    }
+  })
 
 
   const login = async () => {
