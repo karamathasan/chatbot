@@ -13,6 +13,8 @@ import { deleteUser, onAuthStateChanged, signOut } from "firebase/auth";
 
 import { motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
+import Typewriter from "typewriter-effect";
+
 import { doc, collection, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import Background from "./components/background";
@@ -20,56 +22,59 @@ import Background from "./components/background";
 export default function Home() {
   const router = useRouter()
   const logoutSuccess = () => toast.success("Successfully logged out!")
-  const [user,setUser] = useState({})
+  const clearChatSuccess = () => toast.success("Cleared Chat!")
+  const [user, setUser] = useState({})
   const [loading, setLoading] = useState(true)
   const [messages, setMessages] = useState(
     [{ role: "assistant", content: "" }],
   )
+  const [oldMessagesLength, setOldMessagesLength] = useState(0)
 
-  useEffect(()=>{
+  useEffect(() => {
     updateDBHistory()
-  },[messages])
+  }, [messages])
 
   onAuthStateChanged(auth, (currentUser) => {
     if (!currentUser) {
       router.push('/login')
     } else {
       setUser(currentUser)
-      if (loading === true){
-        init()      
+      if (loading) {
+        init()
       }
     }
   })
 
-  const init = async ()=>{
-      const oldMessages = await loadPreviousMessages()
-      const name = user.displayName
-      if (oldMessages.length === 0){
-        const content = `Hi ${name}, I am your AI assistant. How can I help you today?`
-        setMessages([{ role: "assistant", content: content}])
-      }
-      else {
-        const welcome = `Welcome back, ${name}. How can I help you today?`
-        setMessages([...oldMessages,{role:"assistant",content: welcome}])
-      }
-      setLoading(false)
+  const init = async () => {
+    const oldMessages = await loadPreviousMessages()
+    const name = user.displayName
+    if (!oldMessages || oldMessages.length === 0) {
+      const content = `Hi ${name}, I am your AI assistant. How can I help you today?`
+      setMessages([{ role: "assistant", content: content }])
+    }
+    else {
+      setOldMessagesLength(oldMessages.length)
+      const welcome = `Welcome back, ${name}. How can I help you today?`
+      setMessages([...oldMessages, { role: "assistant", content: welcome }])
+    }
+    setLoading(false)
   }
 
-  const loadPreviousMessages = async()=>{
-    try{
+  const loadPreviousMessages = async () => {
+    try {
       const docRef = doc(collection(db, "users"), auth.currentUser.uid)
       const docSnap = await getDoc(docRef)
       const oldMessages = await docSnap.data().messages
       return oldMessages
     } catch (error) {
       console.error(`Failed to get user doc, uid: ${auth.currentUser.uid}`, error);
-    }   
+    }
   }
 
-  const updateDBHistory = async ()=>{
+  const updateDBHistory = async () => {
     const docRef = doc(collection(db, "users"), user.uid)
     const docSnap = await getDoc(docRef)
-    await setDoc(docRef,{...docSnap.data(), messages:messages})
+    await setDoc(docRef, { ...docSnap.data(), messages: messages })
   }
 
   const logout = async () => {
@@ -78,7 +83,7 @@ export default function Home() {
     router.push('/login')
   }
 
-  const deleteAccount = async ()=>{
+  const deleteAccount = async () => {
     const docRef = doc(collection(db, "users"), user.uid)
     await deleteDoc(docRef)
     deleteUser(user)
@@ -109,7 +114,7 @@ export default function Home() {
 
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
-            
+
       let finalResponse = "";
       while (true) { // reader loads text in chunks (per word); this loop appends these chunks into one string, then we use setMessages
         const { done, value } = await reader.read()
@@ -121,7 +126,7 @@ export default function Home() {
         ...messages,
         { role: 'assistant', content: finalResponse }
       ])
-      
+
 
     } catch (error) {
       console.error('Error:', error)
@@ -132,16 +137,27 @@ export default function Home() {
     }
   }
 
+  const clearChat = async () => {
+    const docRef = doc(collection(db, 'users'), user.uid)
+    const docSnap = await getDoc(docRef)
+
+    if (docSnap.exists()) {
+      setDoc(docRef, { messages: [] })
+      clearChatSuccess()
+      init()
+    }
+  }
+
   return (
     <main className="relative">
       <Background />
       <div className="w-screen h-screen min-h-screen flex flex-col items-center justify-center absolute float-left clear-left z-[2] bg-none">
-        <div className="w-full flex flex-row justify-end items-center p-[2rem]">
+        <div className="w-full flex flex-row justify-end items-center p-[2rem] space-x-[1rem]">
+          <button className="border-blue-600 border-[3px] rounded-[20px] p-[1rem] text-[#333] bg-[#fff] hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:text-white transition ease-in-out duration-250" onClick={clearChat}>Clear Chat</button>
+          <button className="border-blue-600 border-[3px] rounded-[20px] p-[1rem] text-[#333] bg-[#fff] hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:text-white transition ease-in-out duration-250" onClick={deleteAccount}>Delete</button>
           <button className="border-blue-600 border-[3px] rounded-[20px] p-[1rem] text-[#333] bg-[#fff] hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:text-white transition ease-in-out duration-250" onClick={logout}>Log out</button>
         </div>
-        <div className="w-full flex flex-row justify-end items-center p-[2rem]">
-          <button className="border-blue-600 border-[3px] rounded-[20px] p-[1rem] text-[#333] bg-[#fff] hover:bg-gradient-to-r hover:from-blue-500 hover:to-blue-600 hover:text-white transition ease-in-out duration-250" onClick={deleteAccount}>Delete</button>
-        </div>
+
         <motion.div
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -154,17 +170,23 @@ export default function Home() {
             <h1>AI Chatbot</h1>
           </div>
           <div className="flex flex-col flex-grow space-y-2 overflow-auto max-h-full">
-            {loading ? (<>. . . . .</>) : (
-              messages.map((message, index) => { 
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ y: 50, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ ease: "easeInOut", duration: 0.5, delay: 0.3 }}
-                >
-                  <Message key={index} message={message} />
-                </motion.div>
+            {loading ? 
+            <Typewriter 
+              options={{cursor: "", loop: true}}
+              onInit={(typewriter) => {
+              typewriter.changeDelay(10).typeString("...").pauseFor(10).deleteAll().start()
+            }}/>
+            : (
+              messages.map((message, index) => {
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ ease: "easeInOut", duration: (index < oldMessagesLength) ? 0 : 0.5, delay: (index < oldMessagesLength) ? 0 : 0.3 }}
+                  >
+                    <Message index={index} key={index} message={message} oldMessagesLength={oldMessagesLength} />
+                  </motion.div>
                 );
               })
             )}
